@@ -1,45 +1,35 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+// App.tsx
+import 'react-native-gesture-handler';
+import React from 'react';
+import { View, StyleSheet } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import AppNavigator from './src/navigation/AppNavigator';
+import { navigationRef } from './src/navigation/RootNavigation'; // Ref 추가
+import Header from './src/components/common/Header';
+import Footer from './src/components/common/Footer';
+import { COLORS } from './src/constants/theme';
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
-
-function App() {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  return (
-    <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
-    </SafeAreaProvider>
-  );
-}
-
-function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
-
-  return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
-      />
-    </View>
-  );
-}
+const App = () => {
+    return (
+        <SafeAreaProvider>
+            <NavigationContainer ref={navigationRef}>
+                <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+                    {/* 이제 Header 내부에서 navigationRef를 쓰기 때문에 에러가 안 납니다. */}
+                    <Header />
+                    <View style={styles.main}>
+                        <AppNavigator />
+                    </View>
+                    <Footer />
+                </SafeAreaView>
+            </NavigationContainer>
+        </SafeAreaProvider>
+    );
+};
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+    root: { flex: 1, backgroundColor: COLORS.white },
+    main: { flex: 1, backgroundColor: COLORS.background },
 });
 
 export default App;
