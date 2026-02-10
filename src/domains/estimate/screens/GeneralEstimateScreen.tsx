@@ -1,20 +1,26 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native'; // Alert 제거
 import Icon from 'react-native-vector-icons/Ionicons';
 import { globalStyles } from '../../../styles/globalStyles';
 import { COLORS, SPACING } from '../../../constants/theme';
+import Header from "../../../components/common/Header"; // Header 경로 확인 필요 (없으면 ../Header)
 
-const GeneralEstimateScreen = ({ navigation }: any) => {
-    // 단계 관리 (1: 기본정보, 2: 사진, 3: 추가설명)
+// 🔥 [핵심] 토스트 훅 import
+import { useToast } from '../../../components/common/Toast';
+
+const GeneralEstimateScreen = ({ navigation, route }: any) => {
+    // 1. 파트너 정보 받기 (없으면 undefined)
+    const targetPartner = route.params?.targetPartner;
+
+    // 🔥 [핵심] 토스트 사용 선언
+    const { showToast } = useToast();
+
     const [step, setStep] = useState(1);
-
-    // 입력 데이터 상태
     const [address, setAddress] = useState('');
     const [buildingType, setBuildingType] = useState('');
     const [description, setDescription] = useState('');
     const [photoCount, setPhotoCount] = useState(0);
 
-    // 건물 형태 옵션 [cite: 335-339]
     const buildingTypes = [
         { id: 'store', label: '상가', icon: 'storefront-outline' },
         { id: 'office', label: '오피스', icon: 'business-outline' },
@@ -22,44 +28,71 @@ const GeneralEstimateScreen = ({ navigation }: any) => {
         { id: 'restaurant', label: '음식점', icon: 'restaurant-outline' },
     ];
 
-    // 다음 단계 이동 로직
     const handleNext = () => {
+        // Step 1 유효성 검사
         if (step === 1 && (!address || !buildingType)) {
-            Alert.alert('알림', '주소와 건물 형태를 모두 입력해주세요.');
+            showToast('주소와 건물 형태를 모두 입력해주세요.', 'error');
             return;
         }
-        if (step === 2 && photoCount < 1) { // 기획서는 5장이지만 테스트용 1장 체크
-            Alert.alert('알림', '현장 사진을 최소 1장 이상 등록해주세요.');
+
+        // Step 2 유효성 검사
+        if (step === 2 && photoCount < 1) {
+            showToast('현장 사진을 최소 1장 이상 등록해주세요.', 'error');
             return;
         }
-        if (step < 3) setStep(step + 1);
-        else {
-            // 최종 제출 로직
-            Alert.alert('신청 완료', '일반 견적 신청이 완료되었습니다.\n24~48시간 내 견적이 도착합니다.', [
-                { text: '확인', onPress: () => navigation.navigate('Home') }
-            ]);
+
+        if (step < 3) {
+            setStep(step + 1);
+        } else {
+            // 최종 제출 완료
+            const successMsg = targetPartner
+                ? `${targetPartner.name} 파트너님에게 요청이 전달되었습니다.`
+                : '견적 신청이 완료되었습니다!';
+
+            // ✅ 성공 토스트 띄우고 홈으로 이동
+            showToast(successMsg, 'success');
+            navigation.navigate('Home');
         }
     };
 
     return (
         <View style={globalStyles.container}>
-            {/* 상단 진행률 바 */}
+            <Header title="일반 견적" />
+
+            {/* 진행률 바 */}
             <View style={styles.progressBar}>
                 <View style={[styles.progressTrack, { width: `${(step / 3) * 100}%` }]} />
             </View>
 
             <ScrollView contentContainerStyle={{ padding: SPACING.l, paddingBottom: 100 }}>
-                {/* 1. 노란색 유의사항 박스 (공통 노출)  */}
+
+                {/* 파트너 지정 배너 */}
+                {targetPartner && (
+                    <View style={styles.targetPartnerBox}>
+                        <Text style={styles.targetLabel}>✨ 지정 견적 요청</Text>
+                        <View style={{flexDirection:'row', alignItems:'center', marginTop:8}}>
+                            <Icon name="person-circle" size={32} color={COLORS.primary} style={{marginRight:8}}/>
+                            <View>
+                                <Text style={styles.targetName}>
+                                    <Text style={{fontWeight:'bold', fontSize:16}}>{targetPartner.name}</Text> 파트너님
+                                </Text>
+                                <Text style={styles.targetSub}>에게 직접 견적을 요청합니다.</Text>
+                            </View>
+                        </View>
+                    </View>
+                )}
+
+                {/* 유의사항 박스 */}
                 <View style={styles.warningBox}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
                         <Icon name="alert-circle" size={18} color="#FF6F00" />
-                        <Text style={styles.warningTitle}> 일반 견적 유의사항</Text>
+                        <Text style={styles.warningTitle}> 견적 신청 유의사항</Text>
                     </View>
                     <Text style={styles.warningText}>• 사진만으로 견적을 내므로 실제 비용과 차이가 있을 수 있어요.</Text>
                     <Text style={styles.warningText}>• 정확한 견적은 <Text style={{fontWeight:'bold', textDecorationLine:'underline'}}>안심 견적</Text>을 추천드려요.</Text>
                 </View>
 
-                {/* --- STEP 1: 기본 정보 [cite: 308-313] --- */}
+                {/* --- STEP 1: 기본 정보 --- */}
                 {step === 1 && (
                     <View>
                         <Text style={styles.sectionTitle}>기본 정보</Text>
@@ -82,11 +115,7 @@ const GeneralEstimateScreen = ({ navigation }: any) => {
                                     style={[styles.gridItem, buildingType === type.id && styles.gridItemActive]}
                                     onPress={() => setBuildingType(type.id)}
                                 >
-                                    <Icon
-                                        name={type.icon}
-                                        size={32}
-                                        color={buildingType === type.id ? COLORS.primary : COLORS.textSecondary}
-                                    />
+                                    <Icon name={type.icon} size={32} color={buildingType === type.id ? COLORS.primary : COLORS.textSecondary} />
                                     <Text style={[styles.gridLabel, buildingType === type.id && styles.gridLabelActive]}>
                                         {type.label}
                                     </Text>
@@ -96,7 +125,7 @@ const GeneralEstimateScreen = ({ navigation }: any) => {
                     </View>
                 )}
 
-                {/* --- STEP 2: 현장 사진 [cite: 315-320] --- */}
+                {/* --- STEP 2: 현장 사진 --- */}
                 {step === 2 && (
                     <View>
                         <Text style={styles.sectionTitle}>현장 사진 필수!</Text>
@@ -120,7 +149,7 @@ const GeneralEstimateScreen = ({ navigation }: any) => {
                     </View>
                 )}
 
-                {/* --- STEP 3: 추가 설명 & 확인 [cite: 321-348] --- */}
+                {/* --- STEP 3: 추가 설명 --- */}
                 {step === 3 && (
                     <View>
                         <Text style={styles.sectionTitle}>추가 설명</Text>
@@ -143,8 +172,11 @@ const GeneralEstimateScreen = ({ navigation }: any) => {
                             <View style={styles.summaryRow}><Text style={styles.sLabel}>주소</Text><Text style={styles.sValue}>{address || '-'}</Text></View>
                             <View style={styles.summaryRow}><Text style={styles.sLabel}>건물 타입</Text><Text style={styles.sValue}>{buildingTypes.find(b=>b.id===buildingType)?.label || '-'}</Text></View>
                             <View style={styles.summaryRow}><Text style={styles.sLabel}>사진 수</Text><Text style={styles.sValue}>{photoCount}장</Text></View>
+
                             <View style={styles.greenBox}>
-                                <Text style={styles.greenText}>✓ 신청 완료 후 24-48시간 내 여러 업체의 견적이 도착해요!</Text>
+                                <Text style={styles.greenText}>
+                                    {targetPartner ? `✓ ${targetPartner.name} 파트너님에게 전달됩니다!` : '✓ 신청 완료 후 24-48시간 내 견적이 도착해요!'}
+                                </Text>
                             </View>
                         </View>
                     </View>
@@ -159,7 +191,7 @@ const GeneralEstimateScreen = ({ navigation }: any) => {
                     </TouchableOpacity>
                 )}
                 <TouchableOpacity style={styles.nextBtn} onPress={handleNext}>
-                    <Text style={styles.nextText}>{step === 3 ? '일반 견적 신청 완료' : '다음'}</Text>
+                    <Text style={styles.nextText}>{step === 3 ? (targetPartner ? '요청 보내기' : '일반 견적 신청 완료') : '다음'}</Text>
                 </TouchableOpacity>
             </View>
         </View>
@@ -169,6 +201,11 @@ const GeneralEstimateScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
     progressBar: { height: 4, backgroundColor: '#EEE', width: '100%' },
     progressTrack: { height: '100%', backgroundColor: COLORS.primary },
+
+    targetPartnerBox: { backgroundColor: '#E3F2FD', padding: 16, borderRadius: 12, marginBottom: 20, borderWidth: 1, borderColor: '#BBDEFB' },
+    targetLabel: { color: COLORS.primary, fontSize: 13, fontWeight: 'bold' },
+    targetName: { color: '#333', fontSize: 16 },
+    targetSub: { color: '#666', fontSize: 14 },
 
     warningBox: { backgroundColor: '#FFF8E1', padding: 16, borderRadius: 12, marginBottom: 24, borderWidth: 1, borderColor: '#FFE082' },
     warningTitle: { color: '#F57C00', fontWeight: 'bold', fontSize: 13 },

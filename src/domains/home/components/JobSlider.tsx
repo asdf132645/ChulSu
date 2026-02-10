@@ -14,7 +14,10 @@ const JobSlider = ({ jobs, navigation }: any) => {
         <View style={styles.bottomSectionWide}>
             <View style={styles.sectionHeaderRow}>
                 <View><Text style={styles.sectionTitleBig}>추천 일감</Text><View style={styles.blueUnderlineShort} /></View>
-                <TouchableOpacity style={styles.viewAllBtn}>
+                <TouchableOpacity
+                    style={styles.viewAllBtn}
+                    onPress={() => navigation.navigate('JobList')}
+                >
                     <Text style={styles.viewAllText}>전체보기</Text>
                     <Icon name="chevron-forward" size={18} color={COLORS.textSecondary} />
                 </TouchableOpacity>

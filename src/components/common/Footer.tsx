@@ -3,12 +3,13 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { navigationRef } from '../../navigation/RootNavigation';
 import { COLORS } from '../../constants/theme';
+import { useUser } from '../../context/UserContext';
 
 const Footer = () => {
-    // 현재 활성화된 라우트 이름 저장
-    const [currentRoute, setCurrentRoute] = useState('Home');
+    const { isPartnerMode } = useUser();
+    // 🔥 [수정 1] 초기값을 'Splash'로 변경 (앱 켜자마자 푸터가 보이면 안 되니까요!)
+    const [currentRoute, setCurrentRoute] = useState('Splash');
 
-    // 내비게이션 상태 변경 감지 리스너
     useEffect(() => {
         const unsubscribe = navigationRef.addListener('state', () => {
             const route = navigationRef.getCurrentRoute();
@@ -19,11 +20,21 @@ const Footer = () => {
         return unsubscribe;
     }, []);
 
-    // 탭 활성화 여부 체크 함수 (서브 화면까지 포함하여 처리 가능)
+    // 🔥 [수정 2] 푸터를 숨길 화면들의 이름 목록
+    // 여기에 'Splash', 'Login', 'ChatRoom' 등을 추가하면 그 화면에선 푸터가 사라집니다.
+    const HIDDEN_SCREENS = ['Splash', 'Login', 'Register'];
+
+    // 현재 화면이 숨김 목록에 있다면 -> 아무것도 그리지 않음 (return null)
+    if (HIDDEN_SCREENS.includes(currentRoute)) {
+        return null;
+    }
+
+    // --- 기존 로직 유지 ---
     const isActive = (tabName: string) => {
-        // 예: 'ChatGuide' 탭은 'ChatRoom' 화면에서도 불이 들어오게 처리 가능
-        if (tabName === 'EstimateType') {
-            return ['EstimateType', 'Booking', 'GeneralEstimate'].includes(currentRoute);
+        if (tabName === 'ActionTab') {
+            return isPartnerMode
+                ? ['JobList', 'JobDetail'].includes(currentRoute)
+                : ['EstimateType', 'Booking', 'GeneralEstimate'].includes(currentRoute);
         }
         if (tabName === 'ChatGuide') {
             return ['ChatGuide', 'ChatRoom'].includes(currentRoute);
@@ -31,7 +42,6 @@ const Footer = () => {
         return currentRoute === tabName;
     };
 
-    // 활성화 색상 반환 (활성: 주황색 / 비활성: 회색)
     const getColor = (tabName: string) => isActive(tabName) ? COLORS.secondary : COLORS.textSecondary;
 
     return (
@@ -46,17 +56,31 @@ const Footer = () => {
                 <Text style={[styles.tabText, { color: getColor('Home') }]}>홈</Text>
             </TouchableOpacity>
 
-            {/* 2. 견적신청 탭 (견적 관련 화면 진입 시에도 주황불 유지) */}
-            <TouchableOpacity style={styles.tab} onPress={() => navigationRef.navigate('EstimateType')}>
+            {/* 2. 가변 탭 (일감찾기 / 견적신청) */}
+            <TouchableOpacity
+                style={styles.tab}
+                onPress={() => {
+                    if (isPartnerMode) {
+                        navigationRef.navigate('JobList');
+                    } else {
+                        navigationRef.navigate('EstimateType');
+                    }
+                }}
+            >
                 <Icon
-                    name={isActive('EstimateType') ? "add-circle" : "add-circle-outline"}
+                    name={isPartnerMode
+                        ? (isActive('ActionTab') ? "search" : "search-outline")
+                        : (isActive('ActionTab') ? "add-circle" : "add-circle-outline")
+                    }
                     size={28}
-                    color={getColor('EstimateType')}
+                    color={getColor('ActionTab')}
                 />
-                <Text style={[styles.tabText, { color: getColor('EstimateType') }]}>견적신청</Text>
+                <Text style={[styles.tabText, { color: getColor('ActionTab') }]}>
+                    {isPartnerMode ? "일감찾기" : "견적신청"}
+                </Text>
             </TouchableOpacity>
 
-            {/* 3. 메시지 탭 (채팅방 안에서도 주황불 유지) */}
+            {/* 3. 메시지 탭 */}
             <TouchableOpacity style={styles.tab} onPress={() => navigationRef.navigate('ChatGuide')}>
                 <Icon
                     name={isActive('ChatGuide') ? "chatbubble" : "chatbubble-outline"}
@@ -66,14 +90,16 @@ const Footer = () => {
                 <Text style={[styles.tabText, { color: getColor('ChatGuide') }]}>메시지</Text>
             </TouchableOpacity>
 
-            {/* 4. 마이철수 탭 */}
+            {/* 4. 마이페이지 탭 */}
             <TouchableOpacity style={styles.tab} onPress={() => console.log("마이페이지 이동")}>
                 <Icon
                     name={isActive('MyPage') ? "person" : "person-outline"}
                     size={22}
                     color={getColor('MyPage')}
                 />
-                <Text style={[styles.tabText, { color: getColor('MyPage') }]}>마이철수</Text>
+                <Text style={[styles.tabText, { color: getColor('MyPage') }]}>
+                    {isPartnerMode ? "파트너홈" : "마이철수"}
+                </Text>
             </TouchableOpacity>
         </View>
     );

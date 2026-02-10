@@ -21,6 +21,9 @@
 @rem SPDX-License-Identifier: Apache-2.0
 @rem
 
+@echo off
+set JAVA_HOME=C:\Program Files\Eclipse Adoptium\jdk-17.0.18.8-hotspot
+
 @if "%DEBUG%"=="" @echo off
 @rem ##########################################################################
 @rem

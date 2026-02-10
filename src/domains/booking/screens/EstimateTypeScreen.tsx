@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { globalStyles } from '../../../styles/globalStyles';
 import { COLORS, SPACING } from '../../../constants/theme';
+import Header from "../../../components/common/Header.tsx";
 
 const EstimateTypeScreen = ({ navigation }: any) => {
     // 기획서 14P의 라디오 버튼 선택 상태 관리
@@ -9,6 +10,7 @@ const EstimateTypeScreen = ({ navigation }: any) => {
 
     return (
         <View style={globalStyles.container}>
+            <Header title="견적신청" />
             <ScrollView contentContainerStyle={{ padding: SPACING.l }}>
                 {/* 기획서 메인 카피 */}
                 <Text style={styles.title}>어떤 방식으로{"\n"}진행할까요?</Text>

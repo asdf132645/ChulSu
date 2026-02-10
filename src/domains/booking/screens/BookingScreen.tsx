@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native'; // Alert 제거
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { globalStyles } from '../../../styles/globalStyles';
 import { COLORS, SPACING } from '../../../constants/theme';
+import Header from "../../../components/common/Header";
+
+// 🔥 [핵심] 토스트 훅 import
+import { useToast } from '../../../components/common/Toast';
 
 // 캘린더 한국어 설정
 LocaleConfig.locales['kr'] = {
@@ -16,6 +20,9 @@ LocaleConfig.locales['kr'] = {
 LocaleConfig.defaultLocale = 'kr';
 
 const BookingScreen = ({ navigation }: any) => {
+    // 🔥 [핵심] 토스트 사용 선언
+    const { showToast } = useToast();
+
     // 단계 관리 (1: 기본정보, 2: 사진, 3: 일정)
     const [step, setStep] = useState(1);
 
@@ -39,37 +46,41 @@ const BookingScreen = ({ navigation }: any) => {
     const handleNext = () => {
         if (step === 1) {
             if (!address || !buildingType || !area) {
-                Alert.alert('알림', '주소, 건물 형태, 평수를 모두 입력해주세요.');
+                // 🚨 Alert 대신 에러 토스트
+                showToast('주소, 건물 형태, 평수를 모두 입력해주세요.', 'error');
                 return;
             }
             setStep(2);
         } else if (step === 2) {
-            if (photoCount < 2) { // 기획서: 최소 2장 권장 [cite: 254]
-                Alert.alert('알림', '정확한 사전 검토를 위해\n최소 2장의 사진을 등록해주세요.');
+            if (photoCount < 2) {
+                // 🚨 Alert 대신 에러 토스트
+                showToast('정확한 검토를 위해 최소 2장의 사진을 등록해주세요.', 'error');
                 return;
             }
             setStep(3);
         } else if (step === 3) {
             if (!selectedDate || !selectedTime) {
-                Alert.alert('알림', '방문 희망 날짜와 시간을 선택해주세요.');
+                // 🚨 Alert 대신 에러 토스트
+                showToast('방문 희망 날짜와 시간을 선택해주세요.', 'error');
                 return;
             }
-            // 최종 완료 처리
-            Alert.alert('신청 완료', '안심 견적 신청이 완료되었습니다.\n24시간 내 본사에서 연락드리겠습니다.', [
-                { text: '확인', onPress: () => navigation.navigate('Home') }
-            ]);
+
+            // ✅ 최종 완료 (성공 토스트 + 홈 이동)
+            showToast('안심 견적 신청이 완료되었습니다! (24시간 내 연락)', 'success');
+            navigation.navigate('Home');
         }
     };
 
     return (
         <View style={globalStyles.container}>
+            <Header title="안심 견적" />
             {/* 상단 진행률 바 (3단계) */}
             <View style={styles.progressBar}>
                 <View style={[styles.progressTrack, { width: `${(step / 3) * 100}%` }]} />
             </View>
 
             <ScrollView contentContainerStyle={{ padding: SPACING.l, paddingBottom: 100 }}>
-                {/* --- STEP 1: 기본 정보 (주소/건물/평수) [cite: 210-221] --- */}
+                {/* --- STEP 1: 기본 정보 (주소/건물/평수) --- */}
                 {step === 1 && (
                     <View>
                         <Text style={styles.headerTitle}>기본 정보 입력</Text>
@@ -120,18 +131,18 @@ const BookingScreen = ({ navigation }: any) => {
                             />
                             <Text style={styles.unitText}>평</Text>
                         </View>
-                        <Text style={styles.helperText}>* 정확한 면적은 본사 직원이 방문하여 측정해드려요 [cite: 221]</Text>
+                        <Text style={styles.helperText}>* 정확한 면적은 본사 직원이 방문하여 측정해드려요</Text>
                     </View>
                 )}
 
-                {/* --- STEP 2: 현장 사진 [cite: 251-254] --- */}
+                {/* --- STEP 2: 현장 사진 --- */}
                 {step === 2 && (
                     <View>
                         <Text style={styles.headerTitle}>현장 사진 업로드</Text>
                         <Text style={styles.headerDesc}>사진이 있으면 더 정확한 사전 검토가 가능해요</Text>
 
                         <View style={styles.tipBox}>
-                            <Text style={styles.tipText}>💡 촬영 팁: 전체 모습, 천장, 바닥, 벽면을 찍어주시면 좋아요! [cite: 269]</Text>
+                            <Text style={styles.tipText}>💡 촬영 팁: 전체 모습, 천장, 바닥, 벽면을 찍어주시면 좋아요!</Text>
                         </View>
 
                         <TouchableOpacity
@@ -140,7 +151,7 @@ const BookingScreen = ({ navigation }: any) => {
                         >
                             <Icon name="camera" size={48} color={COLORS.primary} />
                             <Text style={styles.photoMainText}>사진 촬영 또는 업로드</Text>
-                            <Text style={styles.photoSubText}>최소 2장 이상 권장 (전체 모습, 세부 사항) [cite: 254]</Text>
+                            <Text style={styles.photoSubText}>최소 2장 이상 권장 (전체 모습, 세부 사항)</Text>
                             {photoCount > 0 && (
                                 <View style={styles.photoBadge}>
                                     <Text style={styles.photoBadgeText}>{photoCount}장 선택됨</Text>
@@ -150,7 +161,7 @@ const BookingScreen = ({ navigation }: any) => {
                     </View>
                 )}
 
-                {/* --- STEP 3: 방문 일정 [cite: 255-262] --- */}
+                {/* --- STEP 3: 방문 일정 --- */}
                 {step === 3 && (
                     <View>
                         <Text style={styles.headerTitle}>방문 희망 일정</Text>
@@ -192,7 +203,7 @@ const BookingScreen = ({ navigation }: any) => {
                             ))}
                         </View>
 
-                        {/* 혜택 안내 및 프로세스 [cite: 263-268] */}
+                        {/* 혜택 안내 및 프로세스 */}
                         <View style={styles.benefitBox}>
                             <Text style={styles.benefitTitle}>🎁 첫 이용 혜택</Text>
                             <Text style={styles.benefitText}>방문 측정 무료 + 견적서 무료 제공!</Text>
